@@ -5,14 +5,14 @@
 # Im_port Required Libraries (Standard, Third Party, Local) ********************
 import asyncio
 import copy
+import os
+import sys
 if __name__ == "__main__":
-    import os
-    import sys
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from rpihome_v3.messages.heartbeat import HeartbeatMessage
-from rpihome_v3.messages.heartbeat_ack import HeartbeatMessageACK
-from rpihome_v3.messages.get_device_scheduled_state import GetDeviceScheduledStateMessage
-from rpihome_v3.messages.get_device_scheduled_state_ack import GetDeviceScheduledStateMessageACK
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from bob_schedule_service.messages.heartbeat import HeartbeatMessage
+from bob_schedule_service.messages.heartbeat_ack import HeartbeatMessageACK
+from bob_schedule_service.messages.get_device_scheduled_state import GetDeviceScheduledStateMessage
+from bob_schedule_service.messages.get_device_scheduled_state_ack import GetDeviceScheduledStateMessageACK
 
 
 # Authorship Info *************************************************************

@@ -6,13 +6,13 @@
 import asyncio
 import datetime
 import logging
+import os
+import sys
 if __name__ == "__main__":
-    import os
-    import sys
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from rpihome_v3.occupancy_service.msg_processing import create_heartbeat_msg
-from rpihome_v3.occupancy_service.msg_processing import process_heartbeat_msg
-from rpihome_v3.schedule_service.msg_processing import process_get_device_scheduled_state_msg
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from bob_schedule_service.msg_processing import create_heartbeat_msg
+from bob_schedule_service.msg_processing import process_heartbeat_msg
+from bob_schedule_service.msg_processing import process_get_device_scheduled_state_msg
 
 
 # Authorship Info *************************************************************
