@@ -4,6 +4,7 @@
 
 # Import Required Libraries (Standard, Third Party, Local) ********************
 import asyncio
+import copy
 import datetime
 import logging
 import os
@@ -44,6 +45,7 @@ class MainTask(object):
         self.next_msg = str()
         self.next_msg_split = []
         self.msg_source_addr = str()
+        self.msg_source_port = str()
         self.msg_type = str()
         self.destinations = []
         # Map input variables
@@ -94,9 +96,11 @@ class MainTask(object):
                 self.next_msg_split = self.next_msg.split(',')
                 if len(self.next_msg_split) >= 6:
                     self.log.debug('Extracting source address and message type')
-                    self.msg_source_addr = self.next_msg_split[1]
+                    self.msg_source_addr = self.next_msg_split[3]
+                    self.msg_source_port = self.next_msg_split[4]
                     self.msg_type = self.next_msg_split[5]
                     self.log.debug('Source Address: %s', self.msg_source_addr)
+                    self.log.debug('Source Port: %s', self.msg_source_addr)
                     self.log.debug('Message Type: %s', self.msg_type)
 
                 # Service Check (heartbeat)
@@ -122,8 +126,9 @@ class MainTask(object):
                 if len(self.out_msg_list) > 0:
                     self.log.debug('Queueing response message(s)')
                     for self.out_msg in self.out_msg_list:
-                        self.msg_out_queue.put_nowait(self.out_msg)
-                        self.log.debug('Message [%s] successfully queued', self.out_msg)
+                        self.msg_out_queue.put_nowait(copy.copy(self.out_msg))
+                        self.log.debug('Response message [%s] successfully queued',
+                                       self.out_msg)                        
 
 
             # PERIODIC TASKS
@@ -145,7 +150,7 @@ class MainTask(object):
                 if len(self.out_msg_list) > 0:
                     self.log.debug('Queueing response message(s)')
                     for self.out_msg in self.out_msg_list:
-                        self.msg_out_queue.put_nowait(self.out_msg)
+                        self.msg_out_queue.put_nowait(copy.copy(self.out_msg))
                         self.log.debug('Response message [%s] successfully queued',
                                        self.out_msg)
 
