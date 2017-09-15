@@ -9,6 +9,7 @@ import os
 import sys
 if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from bob_schedule_service.tools.log_support import setup_function_logger 
 from bob_schedule_service.messages.heartbeat import HeartbeatMessage
 from bob_schedule_service.messages.heartbeat_ack import HeartbeatMessageACK
 from bob_schedule_service.messages.get_device_scheduled_state import GetDeviceScheduledStateMessage
@@ -26,15 +27,18 @@ __email__ = "csmaue@gmail.com"
 __status__ = "Development"
 
 
-def create_heartbeat_msg(log, ref_num, destinations, source_addr, source_port, message_types):
+def create_heartbeat_msg(log_path, ref_num, destinations, source_addr, source_port, message_types):
     """ function to create one or more heartbeat messages """
+    # Configure logging for this function
+    log = setup_function_logger(log_path, 'Function_create_heartbeat_msg')
+
     # Initialize result list
     out_msg_list = []
 
     # Generate a heartbeat message for each destination given
     for entry in destinations:
         out_msg = HeartbeatMessage(
-            log=log,
+            log_path,
             ref=ref_num.new(),
             dest_addr=entry[0],
             dest_port=entry[1],
@@ -44,25 +48,28 @@ def create_heartbeat_msg(log, ref_num, destinations, source_addr, source_port, m
         )
         # Load message into output list
         log.debug('Loading completed msg: %s', out_msg.complete)
-        out_msg_list.append(out_msg.complete)
+        out_msg_list.append(copy.copy(out_msg.complete))
 
     # Return response message
     return out_msg_list
 
 
-def process_heartbeat_msg(log, ref_num, msg, message_types):
+def process_heartbeat_msg(log_path, ref_num, msg, message_types):
     """ function to ack wake-up requests to wemo service """
+    # Configure logging for this function
+    log = setup_function_logger(log_path, 'Function_process_heartbeat_msg')
+
     # Initialize result list
     out_msg_list = []
 
     # Map message into wemo wake-up message class
-    message = HeartbeatMessage(log=log)
+    message = HeartbeatMessage(log_path)
     message.complete = msg
 
     # Send response indicating query was executed
     log.debug('Building response message header')
     out_msg = HeartbeatMessageACK(
-        log=log,
+        log_path,
         ref=ref_num.new(),
         dest_addr=message.source_addr,
         dest_port=message.source_port,
@@ -72,21 +79,24 @@ def process_heartbeat_msg(log, ref_num, msg, message_types):
 
     # Load message into output list
     log.debug('Loading completed msg: [%s]', out_msg.complete)
-    out_msg_list.append(out_msg.complete)
+    out_msg_list.append(copy.copy(out_msg.complete))
 
     # Return response message
     return out_msg_list
 
 
 # Process messages type 100 ***************************************************
-def process_get_device_scheduled_state_msg(log, ref_num, schedule, msg, message_types):
+def process_get_device_scheduled_state_msg(log_path, ref_num, schedule, msg, message_types):
     """
     """
+    # Configure logging for this function
+    log = setup_function_logger(log_path, 'Function_process_get_device_scheduled_state_msg')
+
     # Initialize result list
     out_msg_list = []
 
     # Map message into LSU message class
-    message = GetDeviceScheduledStateMessage(log=log)
+    message = GetDeviceScheduledStateMessage(log_path)
     message.complete = msg
 
     # Check schedule for device
@@ -98,6 +108,7 @@ def process_get_device_scheduled_state_msg(log, ref_num, schedule, msg, message_
     if desired_cmd is True:
         log.debug('Device [%s] should be "on" according to schedule', message.dev_name)
         out_msg = GetDeviceScheduledStateMessageACK(
+            log_path,
             ref=ref_num.new(),
             dest_addr=message.source_addr,
             dest_port=message.source_port,
@@ -109,6 +120,7 @@ def process_get_device_scheduled_state_msg(log, ref_num, schedule, msg, message_
     else:
         log.debug('Device [%s] should be "off" according to schedule', message.dev_name)
         out_msg = GetDeviceScheduledStateMessageACK(
+            log_path,
             ref=ref_num.new(),
             dest_addr=message.source_addr,
             dest_port=message.source_port,

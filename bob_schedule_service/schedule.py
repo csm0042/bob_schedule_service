@@ -5,6 +5,7 @@
 # Im_port Required Libraries (Standard, Third Party, Local) ********************
 import datetime
 import logging
+from bob_schedule_service.tools.log_support import setup_function_logger 
 
 
 # Authorship Info *************************************************************

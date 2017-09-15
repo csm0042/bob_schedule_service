@@ -6,6 +6,7 @@
 import logging
 import re
 import sys
+from bob_schedule_service.tools.log_support import setup_function_logger 
 
 
 # Authorship Info *************************************************************

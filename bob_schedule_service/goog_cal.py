@@ -16,6 +16,7 @@ from oauth2client import tools
 from oauth2client.file import Storage
 if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from bob_schedule_service.tools.log_support import setup_function_logger 
 from bob_schedule_service.schedule import Sched
 
 
