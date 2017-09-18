@@ -6,11 +6,12 @@
 # Import Required Libraries (Standard, Third Party, Local) ********************
 import configparser
 import datetime
+import logging
+import logging.handlers
 import os
 import sys
 if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from bob_schedule_service.tools.log_support import setup_log_handlers
 from bob_schedule_service.schedule import Sched
 from bob_schedule_service.goog_cal import GoogleCalSync
 
@@ -37,30 +38,46 @@ class ConfigureService(object):
         # Define connection to configuration file
         self.config_file = configparser.ConfigParser()
         self.cred_file = configparser.ConfigParser()
-        # Configure logger
-        self.log = self.get_logger()
 
 
     def get_logger(self):
         # Set up application logging
         self.config_file.read(self.filename)
-        self.log = setup_log_handlers(
-            __file__,
-            self.config_file['LOG FILES']['schedule_debug_log_file'],
-            self.config_file['LOG FILES']['schedule_info_log_file'])
+        self.log_path = self.config_file['LOG FILES']['log_file_path']
+        self.logger = logging.getLogger('master')
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.handlers = []
+        os.makedirs(self.log_path, exist_ok=True)
+        # Console handler
+        self.handlers = []
+        self.ch = logging.StreamHandler(sys.stdout)
+        self.ch.setLevel(logging.INFO)
+        self.cf = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        self.ch.setFormatter(self.cf)
+        self.logger.addHandler(self.ch)
+        self.logger.info('Console logger handler created and applied')
+        # File handler
+        self.fh = logging.handlers.TimedRotatingFileHandler(
+            os.path.join(self.log_path, "_Debug.log"),
+            when='d',
+            interval=1,
+            backupCount=4
+        )
+        self.fh.setLevel(logging.DEBUG)
+        self.ff = logging.Formatter(
+            '%(asctime)-25s %(levelname)-10s '
+            '%(funcName)-22s %(message)s'
+        )
+        self.fh.setFormatter(self.ff)
+        self.logger.addHandler(self.fh)
+        self.logger.info('File logger handler created and applied')
         # Return configured objects to main program
-        return self.log
-
-
-    def get_logger_path(self):
-        # Set up application logging storage paths
-        self.config_file.read(self.filename)
-        return self.config_file['LOG FILES']['log_file_path']    
+        return self.logger
 
 
     def get_servers(self):
         # Create dict with all services defined in INI file
-        self.config_file.read(self.filename)        
+        self.config_file.read(self.filename)
         for option in self.config_file.options('SERVICES'):
             self.service_addresses[option] = self.config_file['SERVICES'][option]
         # Return dict of configured addresses and ports to main program
@@ -78,12 +95,12 @@ class ConfigureService(object):
 
     def get_credentials(self):
         # Read credential info from file
-        self.config_file.read(self.filename)        
+        self.config_file.read(self.filename)
         try:
             self.credentials = self.config_file['CREDENTIALS']['file']
-            self.log.debug('Credentails file found')
+            self.logger.debug('Credentails file found')
         except:
-            self.log.error('No credentials file found')
+            self.logger.error('No credentials file found')
         # Return configured objects to main program
         return self.credentials
 
@@ -92,16 +109,16 @@ class ConfigureService(object):
         # Define connection to configuration file
         self.config_file.read(self.filename)
         self.cred_file.read(self.credentials)
-        self.log.debug('Connections established to [%s] and [%s]',
-                       self.config_file, self.cred_file)
+        self.logger.debug('Connections established to [%s] and [%s]',
+                          self.config_file, self.cred_file)
         # Read credential info from file
         try:
             self.calId = self.cred_file['GOOGLE']['cal_id']
-            self.log.debug('Setting calendar ID to: [%s]', self.calId)
+            self.logger.debug('Setting calendar ID to: [%s]', self.calId)
             self.credentialDir = self.config_file['CALENDAR']['credential_dir']
-            self.log.debug('Setting credential directory to: [%s]', self.credentialDir)
+            self.logger.debug('Setting credential directory to: [%s]', self.credentialDir)
             self.clientSecretFile = self.config_file['CALENDAR']['client_secret_file']
-            self.log.debug('Setting client secret file to: [%s]', self.clientSecretFile)
+            self.logger.debug('Setting client secret file to: [%s]', self.clientSecretFile)
         except:
             self.calId = self.credentialDir = self.clientSecretFile = None
         # Create connection to calendar
@@ -110,9 +127,9 @@ class ConfigureService(object):
                 cal_id=self.calId,
                 credential_dir=self.credentialDir,
                 client_secret=self.clientSecretFile,
-                log=self.log)
-            self.log.debug('Created calendar object: [%s]', self.schedule)
+                logger=self.logger)
+            self.logger.debug('Created calendar object: [%s]', self.schedule)
         else:
-            self.log.error('Error creating calendar object')
+            self.logger.error('Error creating calendar object')
         # Return configured objects to main program
         return self.schedule

@@ -5,7 +5,6 @@
 # Im_port Required Libraries (Standard, Third Party, Local) ********************
 import datetime
 import logging
-from bob_schedule_service.tools.log_support import setup_function_logger 
 
 
 # Authorship Info *************************************************************
@@ -23,9 +22,9 @@ __status__ = "Development"
 class Sched(object):
     """ Class used to define a schedule object used for automatic on/off control of
     devices that will be controlled from this application """
-    def __init__(self, log=None, **kwargs):
+    def __init__(self, logger=None, **kwargs):
         # Configure logger
-        self.log = log or logging.getLogger(__name__)
+        self.logger = logger or logging.getLogger(__name__)
 
         # Create class instance objects
         self._name = str()

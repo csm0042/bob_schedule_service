@@ -16,7 +16,6 @@ from oauth2client import tools
 from oauth2client.file import Storage
 if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from bob_schedule_service.tools.log_support import setup_function_logger 
 from bob_schedule_service.schedule import Sched
 
 
@@ -34,31 +33,30 @@ __status__ = "Development"
 # Class Definitions ***********************************************************
 class GoogleCalSync(object):
     """ Class and methods necessary to read items from a google calendar  """
-    def __init__(self, cal_id=None, credential_dir=None, client_secret=None, log=None):
-        # Configure logger
-        self.log = log or logging.getLogger(__name__)
-        self.log.debug('Logger configured')
+    def __init__(self, cal_id=None, credential_dir=None, client_secret=None, logger=None):
+        # Configure loggers
+        self.logger = logger or logging.getLogger(__name__)
         # Import calendar ID
-        self.log.debug('Configuring for calendar ID: [%s]', cal_id)
+        self.logger.debug('Configuring for calendar ID: [%s]', cal_id)
         self.cal_id = cal_id
         # Define crediential storage directory
         if credential_dir is not None:
-            self.log.debug('Configuring for credential directory: [%s]', credential_dir)
+            self.logger.debug('Configuring for credential directory: [%s]', credential_dir)
             self.credential_dir = credential_dir
         else:
             self.home_dir = os.path.expanduser('~')
-            self.log.debug('Using home directory: %s', self.home_dir)
+            self.logger.debug('Using home directory: %s', self.home_dir)
             self.credential_dir = os.path.join(self.home_dir, '.credentials')
-            self.log.debug('Using Credential directory: %s', self.credential_dir)
+            self.logger.debug('Using Credential directory: %s', self.credential_dir)
             # If credential directory does not exist, create it
             if not os.path.exists(self.credential_dir):
-                self.log.debug("Creating directory: %s", self.credential_dir)
+                self.logger.debug("Creating directory: %s", self.credential_dir)
                 os.makedirs(self.credential_dir)
         # Define credential file and store
         self.credential_file = os.path.join(self.credential_dir, 'calendar-python-auth.json')
-        self.log.debug('Using credential file: %s', self.credential_file)
+        self.logger.debug('Using credential file: %s', self.credential_file)
         self.store = Storage(self.credential_file)
-        self.log.debug("Setting store to: %s", self.store)
+        self.logger.debug("Setting store to: %s", self.store)
         # Define client secret file and credentail objects
         if client_secret is not None:
             self.CLIENT_SECRET_FILE = client_secret
@@ -74,10 +72,12 @@ class GoogleCalSync(object):
         self.now = None
         self.result = None
         self.events = None
+        self.newCmd = False
         self.schedule = []
         self.result_list = []
         self._last_run = datetime.datetime.now() + datetime.timedelta(hours=-2)
         self.update_schedule()
+        
 
 
     def get_credentials(self):
@@ -87,15 +87,15 @@ class GoogleCalSync(object):
         Returns: Credentials, the obtained credential.  """
         # Get credentials from store
         self.credentials = self.store.get()
-        self.log.debug("Getting credentials from store")
+        self.logger.debug("Getting credentials from store")
         if not self.credentials or self.credentials.invalid:
-            self.log.debug("Credentials not in store")
+            self.logger.debug("Credentials not in store")
             self.flow = client.flow_from_clientsecrets(self.CLIENT_SECRET_FILE, self.SCOPES)
             self.flow.user_agent = self.APPLICATION_NAME
             self.credentials = tools.run_flow(self.flow, self.store, None)
-            self.log.debug('Storing credentials to ' + self.credential_dir)
+            self.logger.debug('Storing credentials to ' + self.credential_dir)
 
-        self.log.debug("Returning credentials to main program")
+        self.logger.debug("Returning credentials to main program")
         return self.credentials
 
 
@@ -117,10 +117,10 @@ class GoogleCalSync(object):
         self.events = self.result.get('items', [])
         # Check if read operation returned any data
         if not self.events:
-            self.log.debug("No upcoming events found")
+            self.logger.debug("No upcoming events found")
             return False
         else:
-            self.log.debug('Events found')
+            self.logger.debug('Events found')
             return True
 
 
@@ -131,7 +131,7 @@ class GoogleCalSync(object):
         # Cycle through raw event list and convert to a usable format
         for event in self.events:
             self.schedule.append(Sched(
-                log=self.log,
+                logger=self.logger,
                 name=self.extract_name(event),
                 start=self.extract_start(event),
                 end=self.extract_end(event)))
@@ -253,14 +253,14 @@ class GoogleCalSync(object):
             self.update_schedule()
         # Check device schedule and prior state command
         if name is not None:
-            newCmd = False
+            self.newCmd = False
             for record in self.schedule:
                 if record.name == name:
                     if record.start <= datetime.datetime.now():
                         if record.end >= datetime.datetime.now():
-                            newCmd = True
+                            self.newCmd = True
         # Return results to main program
-        return newCmd
+        return self.newCmd
 
 
 
